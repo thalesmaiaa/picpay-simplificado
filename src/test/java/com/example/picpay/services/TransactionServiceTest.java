@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-
 class TransactionServiceTest {
 
     @Mock
@@ -26,15 +25,13 @@ class TransactionServiceTest {
     @Mock
     private UserService userService;
 
-
     @InjectMocks
     private TransactionService transactionService;
 
     @BeforeEach
     void setupTests() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
     }
-
 
     private static final User sender = new User(
             "joao",
@@ -69,7 +66,6 @@ class TransactionServiceTest {
         userService.downgradeBalance(sender, transactionAmount);
         userService.upgradeBalance(receiver, transactionAmount);
 
-
         Transaction transaction = new Transaction(transactionAmount, sender, receiver, LocalDateTime.now());
 
         transactionRepository.save(transaction);
@@ -83,7 +79,6 @@ class TransactionServiceTest {
     @Test
     @DisplayName("Should try to transfer value without balance")
     void transferValueCase2() {
-
 
         BigDecimal transactionAmount = new BigDecimal(30);
 
