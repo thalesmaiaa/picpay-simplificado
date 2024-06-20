@@ -18,8 +18,7 @@ public class TransactionController extends AbstractController {
 
     @Autowired
     TransactionService transactionService;
-
-
+    
     @PostMapping
     public ResponseEntity<?> transferValue(@RequestBody TransactionDTO transactionDTO) {
         ObjectNode body = json();

@@ -20,6 +20,5 @@ public class MockyService {
     public void notifyPostTransfer() {
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getForObject(TRANSFER_NOTIFICATION, ObjectNode.class);
-
     }
 }

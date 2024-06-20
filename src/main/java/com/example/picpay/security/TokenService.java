@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Optional;
 
 @Service
 public class TokenService {
@@ -64,22 +63,15 @@ public class TokenService {
 
 
     public Token findByToken(String token) {
-        Optional<Token> possibleToken = tokenRepository.findByToken(token);
-
-        if (possibleToken.isEmpty()) {
-            throw new UserNotFoundException("Token inválido");
-        }
-        return possibleToken.get();
+        Token currentToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new UserNotFoundException("Token inválido"));
+        return currentToken;
     }
 
 
     public Token findByUserId(Long id) {
-        Optional<Token> possibleToken = tokenRepository.findByUserId(id);
-
-        if (possibleToken.isEmpty()) {
-            throw new UserNotFoundException("Token inválido");
-        }
-        return possibleToken.get();
+        Token currentToken = tokenRepository.findByUserId(id).orElseThrow(() -> new UserNotFoundException("Token inválido"));
+        return currentToken;
     }
 }
 

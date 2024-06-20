@@ -2,6 +2,7 @@ package com.example.picpay.security;
 
 import com.example.picpay.domain.token.Token;
 import com.example.picpay.domain.user.User;
+import com.example.picpay.exceptions.UserNotFoundException;
 import com.example.picpay.repositories.UserRepository;
 import com.example.picpay.services.BlacklistedTokenService;
 import jakarta.servlet.FilterChain;
@@ -35,7 +36,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         var login = tokenService.validateToken(token);
 
         if (login != null) {
-            User user = userRepository.findByEmail(login).orElseThrow(() -> new RuntimeException("User Not Found"));
+            User user = userRepository.findByEmail(login).orElseThrow(() -> new UserNotFoundException());
             Token userToken = tokenService.findByUserId(user.getId());
             Boolean isBlacklistedToken = blacklistedTokenService.findByTokenId(userToken.getId());
 

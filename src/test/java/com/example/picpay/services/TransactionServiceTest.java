@@ -85,7 +85,7 @@ class TransactionServiceTest {
         when(userService.findUserById(1L)).thenReturn(sender);
         when(userService.findUserById(2L)).thenReturn(receiver);
 
-        Boolean isTransferPossible = transactionService.isTransferPossible(sender, transactionAmount);
+        Boolean isTransferPossible = transactionService.hasEnoughBalanceForTransfer(sender, transactionAmount);
 
         assertThat(isTransferPossible).isFalse();
 

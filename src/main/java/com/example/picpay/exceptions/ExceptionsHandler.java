@@ -32,5 +32,11 @@ public class ExceptionsHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(404).body(messages);
     }
 
+    @ExceptionHandler(InvalidTransactionException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    private ResponseEntity<ExceptionMessage> invalidTransactionHandler(InvalidTransactionException exception) {
+        ExceptionMessage messages = new ExceptionMessage(404, exception.getMessage());
+        return ResponseEntity.status(404).body(messages);
+    }
 
 }

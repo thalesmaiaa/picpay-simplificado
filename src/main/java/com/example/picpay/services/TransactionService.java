@@ -5,6 +5,8 @@ import com.example.picpay.domain.transaction.TransactionDTO;
 import com.example.picpay.domain.user.User;
 import com.example.picpay.domain.user.UserTypes;
 import com.example.picpay.exceptions.InvalidSenderUserException;
+import com.example.picpay.exceptions.InvalidTransactionException;
+import com.example.picpay.exceptions.UserNotFoundException;
 import com.example.picpay.repositories.TransactionRepository;
 import com.example.picpay.repositories.UserRepository;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -13,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 public class TransactionService extends AbstractValidationService {
@@ -34,67 +35,45 @@ public class TransactionService extends AbstractValidationService {
 
         validateFields(transactionDTO);
 
+        User sender = userRepository.findById(transactionDTO.payer()).orElseThrow(() -> new UserNotFoundException());
+        User receiver = userRepository.findById(transactionDTO.payee()).orElseThrow(() -> new UserNotFoundException());
 
-        Optional<User> possibleSender = userRepository.findById(transactionDTO.payer());
-        Optional<User> possibleReceiver = userRepository.findById(transactionDTO.payee());
+        BigDecimal amount = transactionDTO.value();
 
+        Boolean isSenderLojista = sender.getUserType() == UserTypes.LOJISTA;
 
-        if (possibleSender.isPresent() && possibleReceiver.isPresent()) {
-            User sender = possibleSender.get();
-            User receiver = possibleReceiver.get();
-            BigDecimal amount = transactionDTO.value();
-
-            if (sender.getUserType() == UserTypes.LOJISTA) {
-                throw new InvalidSenderUserException("Seu tipo de usuário não pode realizar transação");
-            }
-
-            Boolean isTransferPossible = isTransferPossible(sender, amount);
-
-            if (isTransferPossible) {
-
-                ObjectNode credentialsResponse = mockyService.getTransferCrendentials();
-
-                if (credentialsResponse.get("message").asText().equals("Autorizado")) {
-                    userService.downgradeBalance(sender, amount);
-                    userService.upgradeBalance(receiver, amount);
-
-                    Transaction transaction = new Transaction(transactionDTO.value(), sender, receiver, LocalDateTime.now());
-
-
-                    transactionRepository.save(transaction);
-
-                    mockyService.notifyPostTransfer();
-
-
-                    body.put("message", "Valor transferido com sucesso");
-                    body.put("status_code", 200);
-
-                    return body;
-                }
-
-                body.put("message", "Erro ao tentar realizar a transação, tente novamente mais tarde");
-                body.put("status_code", 500);
-
-
-            }
-
-            body.put("message", "Você não possui saldo suficiente para realizar a transação");
-            body.put("status_code", 400);
-
-            return body;
-
-
+        if (isSenderLojista) {
+            throw new InvalidSenderUserException("Seu tipo de usuário não pode realizar transação");
         }
 
-        body.put("message", "Requisição inválida");
-        body.put("status_code", 400);
+        Boolean isTransferPossible = hasEnoughBalanceForTransfer(sender, amount);
+
+        ObjectNode credentialsResponse = mockyService.getTransferCrendentials();
+
+        Boolean isAuthorized = credentialsResponse.get("message").asText().equals("Autorizado");
+
+        if (!isTransferPossible || !isAuthorized) {
+            throw new InvalidTransactionException();
+        }
+
+        proceedTransaction(transactionDTO, sender, amount, receiver);
+        body.put("message", "Valor transferido com sucesso");
+        body.put("status_code", 200);
 
         return body;
 
     }
 
+    private void proceedTransaction(TransactionDTO transactionDTO, User sender, BigDecimal amount, User receiver) {
+        userService.downgradeBalance(sender, amount);
+        userService.upgradeBalance(receiver, amount);
 
-    public Boolean isTransferPossible(User sender, BigDecimal amount) {
+        Transaction transaction = new Transaction(transactionDTO.value(), sender, receiver, LocalDateTime.now());
+        transactionRepository.save(transaction);
+        mockyService.notifyPostTransfer();
+    }
+
+    public Boolean hasEnoughBalanceForTransfer(User sender, BigDecimal amount) {
         BigDecimal userBalance = sender.getBalance();
 
         return userBalance.compareTo(amount) >= 0;

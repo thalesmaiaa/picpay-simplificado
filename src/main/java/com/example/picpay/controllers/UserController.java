@@ -41,10 +41,7 @@ public class UserController extends AbstractController {
     @GetMapping
     public ResponseEntity<?> getAllUsers() {
 
-
         ObjectNode body = json();
-
-
         ObjectNode getAllUsersResponse = userService.getAllUsers(body);
 
         if (isErrorResponse(getAllUsersResponse)) {
